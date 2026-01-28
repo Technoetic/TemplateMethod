@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <!-- Meta 태그 -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GoF 템플릿 메서드 패턴 - 인터랙티브 GUI</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Animate.css -->
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+
+  <!-- Prism.js CSS (Tomorrow 테마) -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css"
+        rel="stylesheet" />
+
+  <!-- Mermaid.js -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+
+  <!-- Alpine.js (defer 속성으로 지연 로드) -->
+  <script defer
+          src="https://cdn.jsdelivr.net/npm/alpinejs@3/dist/cdn.min.js"></script>
+
+  <!-- Tailwind CSS 설정 -->
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: '#4A90E2',
+            secondary: '#50E3C2'
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- 커스텀 CSS 스타일 -->
+  <style>
+    /* 애니메이션 */
+    .log-entry {
+      animation: slideInLeft 0.3s ease;
+    }
+
+    @keyframes slideInLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    body {
+      transition: background-color 0.3s ease;
+    }
+
+    /* 기본 컨테이너 스타일 */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* 패딩 유틸리티 */
+    .px-4 { padding-left: 1rem; padding-right: 1rem; }
+    .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+    .px-8 { padding-left: 2rem; padding-right: 2rem; }
+    .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+    .py-6 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+    .py-8 { padding-top: 2rem; padding-bottom: 2rem; }
+    .py-12 { padding-top: 3rem; padding-bottom: 3rem; }
+    .p-4 { padding: 1rem; }
+    .p-6 { padding: 1.5rem; }
+    .p-8 { padding: 2rem; }
+
+    /* 마진 유틸리티 */
+    .mx-auto { margin-left: auto; margin-right: auto; }
+    .mb-2 { margin-bottom: 0.5rem; }
+    .mb-3 { margin-bottom: 0.75rem; }
+    .mb-4 { margin-bottom: 1rem; }
+    .mb-6 { margin-bottom: 1.5rem; }
+    .mb-8 { margin-bottom: 2rem; }
+    .mb-12 { margin-bottom: 3rem; }
+    .mt-1 { margin-top: 0.25rem; }
+    .mt-4 { margin-top: 1rem; }
+    .mt-6 { margin-top: 1.5rem; }
+    .mt-8 { margin-top: 2rem; }
+    .mt-12 { margin-top: 3rem; }
+    .mr-2 { margin-right: 0.5rem; }
+    .mr-3 { margin-right: 0.75rem; }
+    .ml-7 { margin-left: 1.75rem; }
+
+    /* 그리드 */
+    .grid {
+      display: grid;
+    }
+    .grid-cols-1 {
+      grid-template-columns: repeat(1, minmax(0, 1fr));
+    }
+    .gap-6 {
+      gap: 1.5rem;
+    }
+    .gap-8 {
+      gap: 2rem;
+    }
+
+    /* 반응형 */
+    @media (min-width: 768px) {
+      .md\:grid-cols-2 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .md\:grid-cols-3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    /* 텍스트 스타일 */
+    .text-lg {
+      font-size: 1.125rem;
+      line-height: 1.75rem;
+    }
+    .text-xl {
+      font-size: 1.25rem;
+      line-height: 1.75rem;
+    }
+    .text-2xl {
+      font-size: 1.5rem;
+      line-height: 2rem;
+    }
+    .text-3xl {
+      font-size: 1.875rem;
+      line-height: 2.25rem;
+    }
+    .text-4xl {
+      font-size: 2.25rem;
+      line-height: 2.5rem;
+    }
+
+    .text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+    .text-xs { font-size: 0.75rem; line-height: 1rem; }
+    .text-center { text-align: center; }
+    .text-left { text-align: left; }
+
+    .font-bold { font-weight: 700; }
+    .font-semibold { font-weight: 600; }
+    .font-medium { font-weight: 500; }
+
+    /* 색상 */
+    .text-white { color: white; }
+    .text-gray-600 { color: rgb(75, 85, 99); }
+    .text-gray-700 { color: rgb(55, 65, 81); }
+    .text-gray-800 { color: rgb(31, 41, 55); }
+    .text-blue-700 { color: rgb(29, 78, 216); }
+    .text-blue-800 { color: rgb(30, 64, 175); }
+    .text-blue-900 { color: rgb(30, 58, 138); }
+    .text-green-700 { color: rgb(21, 128, 61); }
+    .text-green-800 { color: rgb(22, 101, 52); }
+    .text-green-900 { color: rgb(20, 83, 45); }
+    .text-red-700 { color: rgb(185, 28, 28); }
+    .text-purple-700 { color: rgb(126, 34, 206); }
+    .text-purple-900 { color: rgb(88, 28, 135); }
+    .text-orange-600 { color: rgb(234, 88, 12); }
+
+    /* 배경색 */
+    .bg-white { background-color: white; }
+    .bg-gray-50 { background-color: rgb(249, 250, 251); }
+    .bg-gray-100 { background-color: rgb(243, 244, 246); }
+    .bg-gray-800 { background-color: rgb(31, 41, 55); }
+    .bg-blue-50 { background-color: rgb(239, 246, 255); }
+    .bg-blue-500 { background-color: rgb(59, 130, 246); }
+    .bg-blue-600 { background-color: rgb(37, 99, 235); }
+    .bg-purple-500 { background-color: rgb(168, 85, 247); }
+    .bg-purple-600 { background-color: rgb(147, 51, 234); }
+    .bg-green-50 { background-color: rgb(240, 253, 244); }
+    .bg-green-500 { background-color: rgb(34, 197, 94); }
+    .bg-green-600 { background-color: rgb(22, 163, 74); }
+    .bg-red-500 { background-color: rgb(239, 68, 68); }
+
+    /* 테두리 */
+    .rounded-lg { border-radius: 0.5rem; }
+    .rounded-xl { border-radius: 0.75rem; }
+    .rounded-full { border-radius: 9999px; }
+
+    .border-l-4 { border-left: 4px solid; }
+    .border-l-4.border-blue-500 { border-left-color: rgb(59, 130, 246); }
+    .border-l-4.border-green-500 { border-left-color: rgb(34, 197, 94); }
+
+    /* 섀도우 */
+    .shadow-sm { box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
+    .shadow-lg {
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+    .shadow-xl {
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+
+    /* 전환 */
+    .transition-colors { transition-property: background-color, border-color, color; }
+    .transition-shadow { transition-property: box-shadow; }
+    .transition-all { transition-property: all; }
+    .duration-200 { transition-duration: 200ms; }
+    .duration-300 { transition-duration: 300ms; }
+
+    /* 호버 */
+    .hover\:shadow-xl:hover {
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+    .hover\:bg-gray-200:hover { background-color: rgb(229, 231, 235); }
+    .hover\:bg-gray-700:hover { background-color: rgb(55, 65, 81); }
+
+    /* 포커스 */
+    .focus\:outline-none:focus { outline: none; }
+    .focus\:ring-2:focus { box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05), 0 0 0 4px rgb(59, 130, 246); }
+
+    /* 카드 */
+    .card {
+      background-color: white;
+      border-radius: 0.75rem;
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 1rem 1.5rem;
+    }
+
+    .card-body {
+      padding: 1.5rem;
+    }
+
+    /* 리스트 */
+    .space-y-2 > * + * { margin-top: 0.5rem; }
+    .space-y-3 > * + * { margin-top: 0.75rem; }
+    .space-y-4 > * + * { margin-top: 1rem; }
+
+    /* Flex */
+    .flex { display: flex; }
+    .items-center { align-items: center; }
+    .items-start { align-items: flex-start; }
+    .justify-between { justify-content: space-between; }
+    .gap-1 { gap: 0.25rem; }
+    .gap-2 { gap: 0.5rem; }
+    .gap-3 { gap: 0.75rem; }
+    .gap-4 { gap: 1rem; }
+
+    .flex-col { flex-direction: column; }
+    .flex-wrap { flex-wrap: wrap; }
+    .flex-shrink-0 { flex-shrink: 0; }
+
+    /* 너비/높이 */
+    .w-5 { width: 1.25rem; }
+    .w-6 { width: 1.5rem; }
+    .w-7 { width: 1.75rem; }
+    .h-5 { height: 1.25rem; }
+    .h-6 { height: 1.5rem; }
+    .h-7 { height: 1.75rem; }
+
+    .inline-block { display: inline-block; }
+
+    /* 버튼 스타일 */
+    .btn-base {
+      padding: 12px 24px;
+      border: 2px solid;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1em;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .btn-primary {
+      border-color: rgb(59, 130, 246);
+      background: white;
+      color: rgb(59, 130, 246);
+    }
+
+    .btn-primary:hover {
+      background: rgb(240, 245, 255);
+      transform: translateY(-2px);
+    }
+
+    .btn-primary.active {
+      background: rgb(59, 130, 246);
+      color: white;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
+
+    .btn-success {
+      background: rgb(34, 197, 94);
+      color: white;
+      border: none;
+    }
+
+    .btn-success:hover {
+      background: rgb(22, 163, 74);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
+    }
+
+    .btn-danger {
+      background: rgb(239, 68, 68);
+      color: white;
+      border: none;
+    }
+
+    .btn-danger:hover {
+      background: rgb(220, 38, 38);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+    }
+
+    /* 코드 영역 */
+    .code-section {
+      background: rgb(248, 249, 250);
+      border: 2px solid rgb(224, 224, 224);
+      border-radius: 8px;
+      padding: 25px;
+      margin-bottom: 30px;
+    }
+
+    pre {
+      background: rgb(40, 44, 52);
+      color: rgb(171, 178, 191);
+      padding: 20px;
+      border-radius: 6px;
+      overflow-x: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 0.95em;
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    code {
+      color: rgb(171, 178, 191);
+    }
+
+    .keyword { color: rgb(198, 120, 221); }
+    .string { color: rgb(152, 195, 121); }
+    .function { color: rgb(97, 175, 239); }
+    .comment { color: rgb(92, 99, 112); font-style: italic; }
+
+    /* 로그 영역 */
+    .log-section {
+      background: rgb(248, 249, 250);
+      border: 2px solid rgb(224, 224, 224);
+      border-radius: 8px;
+      padding: 25px;
+    }
+
+    #execution-log {
+      background: rgb(30, 30, 30);
+      color: rgb(212, 212, 212);
+      padding: 20px;
+      border-radius: 6px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.95em;
+      max-height: 400px;
+      overflow-y: auto;
+      min-height: 150px;
+      line-height: 1.6;
+    }
+
+    .log-entry {
+      padding: 6px 0;
+      border-left: 3px solid transparent;
+      padding-left: 12px;
+      animation: slideInLeft 0.3s ease;
+    }
+
+    .log-entry.info {
+      color: rgb(33, 150, 243);
+      border-left-color: rgb(33, 150, 243);
+    }
+
+    .log-entry.success {
+      color: rgb(76, 175, 80);
+      border-left-color: rgb(76, 175, 80);
+    }
+
+    .log-entry.error {
+      color: rgb(244, 67, 54);
+      border-left-color: rgb(244, 67, 54);
+    }
+
+    .log-entry.hook {
+      color: rgb(255, 152, 0);
+      border-left-color: rgb(255, 152, 0);
+      font-style: italic;
+    }
+
+    /* 스크롤바 스타일 */
+    #execution-log::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    #execution-log::-webkit-scrollbar-track {
+      background: rgb(45, 45, 45);
+      border-radius: 4px;
+    }
+
+    #execution-log::-webkit-scrollbar-thumb {
+      background: rgb(85, 85, 85);
+      border-radius: 4px;
+    }
+
+    #execution-log::-webkit-scrollbar-thumb:hover {
+      background: rgb(119, 119, 119);
+    }
+
+    /* Mermaid 다이어그램 */
+    .mermaid {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* 다크 모드 지원 */
+    .dark {
+      color-scheme: dark;
+    }
+
+    .dark .bg-white { background-color: rgb(31, 41, 55); }
+    .dark .bg-gray-50 { background-color: rgb(17, 24, 39); }
+    .dark .bg-blue-50 { background-color: rgb(15, 30, 90); }
+    .dark .bg-green-50 { background-color: rgb(8, 38, 20); }
+    .dark .text-gray-600 { color: rgb(209, 213, 219); }
+    .dark .text-gray-700 { color: rgb(209, 213, 219); }
+    .dark .text-gray-800 { color: rgb(243, 244, 246); }
+    .dark .text-blue-900 { color: rgb(191, 219, 254); }
+    .dark .text-green-900 { color: rgb(187, 247, 208); }
+    .dark .text-purple-900 { color: rgb(216, 180, 254); }
+
+    .dark .card {
+      background-color: rgb(31, 41, 55);
+      border: 1px solid rgb(75, 85, 99);
+    }
+
+    .dark .code-section {
+      background: rgb(17, 24, 39);
+      border-color: rgb(75, 85, 99);
+    }
+
+    .dark .log-section {
+      background: rgb(17, 24, 39);
+      border-color: rgb(75, 85, 99);
+    }
+
+    .dark .bg-gray-100 { background-color: rgb(55, 65, 81); }
+
+    /* 컨트롤 패널 */
+    .control-panel {
+      background: rgb(248, 249, 250);
+      border: 2px solid rgb(224, 224, 224);
+      border-radius: 8px;
+      padding: 25px;
+      margin-bottom: 30px;
+    }
+
+    .control-panel h3 {
+      color: rgb(51, 51, 51);
+      margin-bottom: 20px;
+      font-size: 1.2em;
+      font-weight: 600;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 25px;
+    }
+
+    .execution-controls {
+      display: flex;
+      gap: 12px;
+      margin-top: 25px;
+      padding-top: 25px;
+      border-top: 1px solid rgb(224, 224, 224);
+    }
+
+    .execution-controls button {
+      flex: 1;
+      padding: 14px 28px;
+      font-size: 1em;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .dark .control-panel {
+      background: rgb(31, 41, 55);
+      border-color: rgb(75, 85, 99);
+    }
+
+    .dark .control-panel h3 {
+      color: rgb(243, 244, 246);
+    }
+
+    .dark .execution-controls {
+      border-top-color: rgb(75, 85, 99);
+    }
+
+    /* 반응형 디자인 */
+    @media (max-width: 768px) {
+      .button-group {
+        flex-direction: column;
+      }
+
+      .btn-base, .execution-controls button {
+        width: 100%;
+      }
+
+      .execution-controls {
+        flex-direction: column;
+      }
+
+      pre {
+        font-size: 0.85em;
+      }
+
+      .text-3xl {
+        font-size: 1.5rem;
+      }
+
+      .text-4xl {
+        font-size: 1.875rem;
+      }
+    }
+  </style>
+</head>
+
+<body x-data="patternDemo()"
+      @load="init()"
+      :class="{ 'dark': darkMode }"
+      class="bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+
+  <div class="bg-gray-50 dark:bg-gray-900 transition-colors duration-300 min-h-screen flex flex-col">
+
+    <!-- HEADER 섹션 -->
+    <header class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900
+                   border-b border-gray-200 dark:border-gray-700
+                   shadow-sm dark:shadow-lg">
+      <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center py-4 sm:py-6 lg:py-8">
+          <!-- 헤더 왼쪽 영역: 제목과 부제 -->
+          <div class="flex flex-col gap-1 sm:gap-2">
+            <h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold
+                       text-gray-900 dark:text-white">
+              GoF 템플릿 메서드 패턴
+            </h1>
+            <p class="text-sm sm:text-base lg:text-lg
+                      text-gray-600 dark:text-gray-400">
+              Template Method Pattern - 인터랙티브 학습
+            </p>
+          </div>
+
+          <!-- 헤더 오른쪽 영역: 다크 모드 토글 버튼 -->
+          <button @click="darkMode = !darkMode"
+                  class="p-2 sm:p-3 rounded-lg
+                         bg-gray-100 dark:bg-gray-800
+                         hover:bg-gray-200 dark:hover:bg-gray-700
+                         transition-colors duration-200
+                         focus:outline-none focus:ring-2 focus:ring-offset-2
+                         focus:ring-blue-500 dark:focus:ring-offset-gray-900"
+                  aria-label="다크 모드 토글">
+            <!-- 태양 아이콘 (라이트 모드일 때 표시) -->
+            <svg x-show="!darkMode"
+                 class="w-6 h-6 text-yellow-500 sm:w-7 sm:h-7"
+                 fill="currentColor" viewBox="0 0 20 20"
+                 xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd"
+                    d="M10 2a1 1 0 011 1v2a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l-2.83-2.83a1 1 0 00-1.414 1.414l2.83 2.83a1 1 0 001.414-1.414zM2.05 10.5a1 1 0 111.414-1.414L5.678 11.05a1 1 0 01-1.414 1.414L2.05 10.5zM17.95 10.5a1 1 0 01-1.414 1.414l-2.828-2.829a1 1 0 011.414-1.414l2.828 2.829zM4.464 4.465a1 1 0 00-1.414 1.414l2.83 2.83a1 1 0 001.414-1.414L4.464 4.465z"
+                    clip-rule="evenodd" />
+            </svg>
+
+            <!-- 달 아이콘 (다크 모드일 때 표시) -->
+            <svg x-show="darkMode"
+                 class="w-6 h-6 text-blue-400 sm:w-7 sm:h-7"
+                 fill="currentColor" viewBox="0 0 20 20"
+                 xmlns="http://www.w3.org/2000/svg">
+              <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN 섹션 -->
+    <main class="flex-1">
+
+      <!-- 섹션 1: 템플릿 메서드 패턴 설명 -->
+      <section class="pattern-overview">
+        <div class="container mx-auto px-4 py-12">
+          <h2 class="text-4xl font-bold text-center mb-12 text-gray-800 dark:text-white">
+            템플릿 메서드 패턴 완전 가이드
+          </h2>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- 카드 1: 정의 -->
+            <div class="card rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 bg-white dark:bg-gray-800">
+              <div class="card-header bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
+                <h3 class="text-2xl font-bold text-white">패턴의 정의</h3>
+              </div>
+              <div class="card-body p-6">
+                <p class="text-gray-700 dark:text-gray-300 leading-relaxed">
+                  알고리즘의 골격을 부모 클래스에서 정의하고, 자식 클래스가 특정 단계를 구현하도록 하는 행동 패턴입니다.
+                </p>
+                <div class="mt-4 p-4 bg-blue-50 dark:bg-blue-900 border-l-4 border-blue-500 rounded">
+                  <p class="text-sm text-blue-900 dark:text-blue-100">
+                    <strong>핵심:</strong> 알고리즘의 변하지 않는 부분은 상위 클래스에, 변하는 부분은 하위 클래스에 배치하여 코드 재사용성을 극대화합니다.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- 카드 2: 주요 개념 -->
+            <div class="card rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 bg-white dark:bg-gray-800">
+              <div class="card-header bg-gradient-to-r from-purple-500 to-purple-600 px-6 py-4">
+                <h3 class="text-2xl font-bold text-white">주요 개념</h3>
+              </div>
+              <div class="card-body p-6">
+                <ul class="space-y-4">
+                  <li class="flex items-start">
+                    <span class="inline-block w-6 h-6 bg-purple-500 text-white rounded-full text-center text-sm font-bold mr-3 flex-shrink-0 mt-1">1</span>
+                    <div>
+                      <p class="font-semibold text-gray-800 dark:text-gray-200">템플릿 메서드 (final)</p>
+                      <p class="text-sm text-gray-600 dark:text-gray-400">알고리즘의 골격을 정의하며 오버라이드 불가능</p>
+                    </div>
+                  </li>
+                  <li class="flex items-start">
+                    <span class="inline-block w-6 h-6 bg-purple-500 text-white rounded-full text-center text-sm font-bold mr-3 flex-shrink-0 mt-1">2</span>
+                    <div>
+                      <p class="font-semibold text-gray-800 dark:text-gray-200">추상 메서드</p>
+                      <p class="text-sm text-gray-600 dark:text-gray-400">자식 클래스에서 반드시 구현해야 함</p>
+                    </div>
+                  </li>
+                  <li class="flex items-start">
+                    <span class="inline-block w-6 h-6 bg-purple-500 text-white rounded-full text-center text-sm font-bold mr-3 flex-shrink-0 mt-1">3</span>
+                    <div>
+                      <p class="font-semibold text-gray-800 dark:text-gray-200">훅 메서드</p>
+                      <p class="text-sm text-gray-600 dark:text-gray-400">선택적 오버라이드 가능한 메서드</p>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- 카드 3: 장단점 -->
+            <div class="card rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 bg-white dark:bg-gray-800">
+              <div class="card-header bg-gradient-to-r from-green-500 to-green-600 px-6 py-4">
+                <h3 class="text-2xl font-bold text-white">장단점</h3>
+              </div>
+              <div class="card-body p-6">
+                <div class="mb-6">
+                  <h4 class="font-semibold text-green-700 dark:text-green-300 mb-3 flex items-center">
+                    <span class="inline-block w-5 h-5 bg-green-500 rounded-full text-white text-center text-xs mr-2">✓</span>
+                    장점
+                  </h4>
+                  <ul class="space-y-2 ml-7">
+                    <li class="text-sm text-gray-700 dark:text-gray-300">코드 재사용성 향상</li>
+                    <li class="text-sm text-gray-700 dark:text-gray-300">중복 제거</li>
+                    <li class="text-sm text-gray-700 dark:text-gray-300">제어의 역전 (IoC) 구현</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 class="font-semibold text-red-700 dark:text-red-300 mb-3 flex items-center">
+                    <span class="inline-block w-5 h-5 bg-red-500 rounded-full text-white text-center text-xs mr-2">✕</span>
+                    단점
+                  </h4>
+                  <ul class="space-y-2 ml-7">
+                    <li class="text-sm text-gray-700 dark:text-gray-300">디버깅 복잡성</li>
+                    <li class="text-sm text-gray-700 dark:text-gray-300">상속 제한</li>
+                    <li class="text-sm text-gray-700 dark:text-gray-300">경직된 구조</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 섹션 2: 클래스 다이어그램 -->
+      <section class="class-diagram-section">
+        <div class="container mx-auto px-4 py-12 bg-gray-50 dark:bg-gray-900">
+          <h2 class="text-4xl font-bold text-center mb-4 text-gray-800 dark:text-white">
+            클래스 다이어그램
+          </h2>
+          <p class="text-center text-gray-600 dark:text-gray-400 mb-12 max-w-2xl mx-auto">
+            템플릿 메서드 패턴의 클래스 구조를 보여주는 UML 다이어그램입니다. 추상 클래스가 템플릿 메서드를 정의하고, 구상 클래스들이 이를 상속받아 특정 메서드를 구현합니다.
+          </p>
+
+          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
+            <div class="mermaid" id="class-diagram">
+classDiagram
+    class CaffeineBeverage {
+        <<abstract>>
+        +prepareRecipe()* final
+        #boilWater()
+        #brew()* abstract
+        #pourInCup()
+        #addCondiments()* abstract
+        #customerWantsCondiments() bool
+    }
+
+    class Coffee {
+        #brew()
+        #addCondiments()
+    }
+
+    class Tea {
+        #brew()
+        #addCondiments()
+    }
+
+    class Espresso {
+        #brew()
+        #addCondiments()
+        #customerWantsCondiments() bool
+    }
+
+    CaffeineBeverage <|-- Coffee
+    CaffeineBeverage <|-- Tea
+    CaffeineBeverage <|-- Espresso
+            </div>
+          </div>
+
+          <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- 다이어그램 설명 -->
+            <div class="bg-blue-50 dark:bg-blue-900 rounded-lg p-6 border-l-4 border-blue-500">
+              <h3 class="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-4">
+                추상 클래스 (CaffeineBeverage)
+              </h3>
+              <ul class="space-y-3 text-sm text-blue-800 dark:text-blue-100">
+                <li><strong>prepareRecipe():</strong> 템플릿 메서드로 알고리즘 골격을 정의</li>
+                <li><strong>boilWater(), pourInCup():</strong> 구체 메서드로 공통 단계 구현</li>
+                <li><strong>brew(), addCondiments():</strong> 추상 메서드로 구현 필수</li>
+                <li><strong>customerWantsCondiments():</strong> 훅 메서드로 선택적 오버라이드</li>
+              </ul>
+            </div>
+
+            <!-- 구상 클래스 설명 -->
+            <div class="bg-green-50 dark:bg-green-900 rounded-lg p-6 border-l-4 border-green-500">
+              <h3 class="text-lg font-semibold text-green-900 dark:text-green-100 mb-4">
+                구상 클래스들
+              </h3>
+              <ul class="space-y-3 text-sm text-green-800 dark:text-green-100">
+                <li><strong>Coffee:</strong> 추상 메서드만 구현하여 기본 훅 메서드 사용</li>
+                <li><strong>Tea:</strong> 추상 메서드만 구현하여 기본 훅 메서드 사용</li>
+                <li><strong>Espresso:</strong> 추상 메서드와 훅 메서드 모두 구현</li>
+                <li><em>각 클래스는 자신의 특화된 로직만 구현</em></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 섹션 3: 인터랙티브 데모 -->
+      <section class="interactive-demo-section py-12">
+        <div class="container mx-auto px-4">
+          <h2 class="text-4xl font-bold text-center mb-8 text-gray-800 dark:text-white">
+            인터랙티브 데모
+          </h2>
+
+          <!-- 컨트롤 패널 -->
+          <div class="control-panel dark:bg-gray-800 dark:border-gray-700">
+            <h3 class="dark:text-gray-100">예제 선택</h3>
+            <div class="button-group">
+              <button class="btn-base btn-primary"
+                      :class="{ 'active': selectedBeverage === 'coffee' }"
+                      @click="selectBeverage('coffee')">
+                ☕ Coffee
+              </button>
+              <button class="btn-base btn-primary"
+                      :class="{ 'active': selectedBeverage === 'tea' }"
+                      @click="selectBeverage('tea')">
+                🍵 Tea
+              </button>
+              <button class="btn-base btn-primary"
+                      :class="{ 'active': selectedBeverage === 'espresso' }"
+                      @click="selectBeverage('espresso')">
+                ☕ Espresso
+              </button>
+            </div>
+
+            <!-- 실행 컨트롤 -->
+            <div class="execution-controls dark:border-gray-700">
+              <button class="btn-success" @click="run()">▶ 전체 실행</button>
+              <button class="btn-danger" @click="reset()">⟲ 리셋</button>
+            </div>
+          </div>
+
+          <!-- 코드 표시 영역 -->
+          <div class="code-section dark:bg-gray-800 dark:border-gray-700">
+            <h3 class="dark:text-gray-100">코드</h3>
+
+            <!-- Coffee 예제 -->
+            <div x-show="selectedBeverage === 'coffee'">
+              <pre><code><span class="keyword">class</span> <span class="function">Coffee</span> <span class="keyword">extends</span> <span class="function">CaffeineBeverage</span> {
+  <span class="function">brew</span>() {
+    <span class="comment">// 필터로 커피를 우려냅니다</span>
+    <span class="keyword">this</span>.<span class="function">log</span>(<span class="string">'커피 필터를 사용해 우립니다'</span>);
+  }
+
+  <span class="function">addCondiments</span>() {
+    <span class="comment">// 설탕과 우유를 추가합니다</span>
+    <span class="keyword">this</span>.<span class="function">log</span>(<span class="string">'설탕과 우유를 추가합니다'</span>);
+  }
+}</code></pre>
+            </div>
+
+            <!-- Tea 예제 -->
+            <div x-show="selectedBeverage === 'tea'">
+              <pre><code><span class="keyword">class</span> <span class="function">Tea</span> <span class="keyword">extends</span> <span class="function">CaffeineBeverage</span> {
+  <span class="function">brew</span>() {
+    <span class="comment">// 찻잎을 우려냅니다</span>
+    <span class="keyword">this</span>.<span class="function">log</span>(<span class="string">'차 잎을 우립니다'</span>);
+  }
+
+  <span class="function">addCondiments</span>() {
+    <span class="comment">// 레몬을 추가합니다</span>
+    <span class="keyword">this</span>.<span class="function">log</span>(<span class="string">'레몬을 추가합니다'</span>);
+  }
+}</code></pre>
+            </div>
+
+            <!-- Espresso 예제 -->
+            <div x-show="selectedBeverage === 'espresso'">
+              <pre><code><span class="keyword">class</span> <span class="function">Espresso</span> <span class="keyword">extends</span> <span class="function">CaffeineBeverage</span> {
+  <span class="function">brew</span>() {
+    <span class="comment">// 에스프레소를 추출합니다</span>
+    <span class="keyword">this</span>.<span class="function">log</span>(<span class="string">'에스프레소를 추출합니다'</span>);
+  }
+
+  <span class="function">customerWantsCondiments</span>() {
+    <span class="comment">// 훅 메서드 오버라이드</span>
+    <span class="keyword">return</span> <span class="keyword">false</span>;
+  }
+}</code></pre>
+            </div>
+          </div>
+
+          <!-- 실행 로그 섹션 -->
+          <div class="log-section dark:bg-gray-800 dark:border-gray-700">
+            <h3 class="dark:text-gray-100">실행 로그</h3>
+            <div id="execution-log">
+              <template x-for="(log, index) in logs" :key="index">
+                <div class="log-entry" :class="log.type"
+                     :class="{'animate__animated animate__slideInLeft': true}">
+                  <span x-text="log.message"></span>
+                </div>
+              </template>
+              <div x-show="logs.length === 0" style="color: #888; padding: 20px; text-align: center;">
+                실행하면 로그가 여기에 표시됩니다.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 섹션 4: 시퀀스 다이어그램 -->
+      <section class="sequence-diagram-section py-12 bg-gray-50 dark:bg-gray-900">
+        <div class="container mx-auto px-4">
+          <h2 class="text-4xl font-bold text-center mb-8 text-gray-800 dark:text-white">
+            실행 흐름 시퀀스 다이어그램
+          </h2>
+          <p class="text-center text-gray-600 dark:text-gray-400 mb-12 max-w-2xl mx-auto">
+            선택된 음료의 제조 과정을 시퀀스 다이어그램으로 시각화합니다. 데모를 실행하면 다이어그램이 업데이트됩니다.
+          </p>
+
+          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
+            <div class="mermaid" id="sequence-diagram">
+sequenceDiagram
+    participant Client
+    participant Coffee
+    participant CaffeineBeverage
+
+    Client->>+Coffee: prepareRecipe()
+    Coffee->>CaffeineBeverage: boilWater()
+    CaffeineBeverage-->>-Coffee:
+    Coffee->>+Coffee: brew()
+    Note right of Coffee: 커피 필터를 사용해 우립니다
+    Coffee-->>-Coffee:
+    Coffee->>CaffeineBeverage: pourInCup()
+    CaffeineBeverage-->>-Coffee:
+    Coffee->>+Coffee: addCondiments()
+    Note right of Coffee: 설탕과 우유를 추가합니다
+    Coffee-->>-Coffee:
+    Coffee-->>Client: 완료
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- FOOTER (선택사항) -->
+    <footer class="bg-gray-100 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-6">
+      <div class="container mx-auto px-4 text-center text-gray-600 dark:text-gray-400 text-sm">
+        <p>GoF 템플릿 메서드 패턴 - 인터랙티브 학습 가이드</p>
+        <p class="text-xs mt-2">Design Patterns: Elements of Reusable Object-Oriented Software</p>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- Prism.js (코드 구문 강조) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+
+  <!-- Mermaid 초기화 -->
+  <script>
+    mermaid.initialize({ startOnLoad: true, theme: 'default' });
+    mermaid.contentLoaded();
+  </script>
+
+  <!-- Alpine.js 데이터 및 로직 -->
+  <script>
+    // ===== CaffeineBeverage 추상 클래스 =====
+    class CaffeineBeverage {
+      constructor() {
+        this.onLog = null;
+      }
+
+      // 템플릿 메서드: 알고리즘의 골격을 정의
+      prepareRecipe() {
+        this.boilWater();
+        this.brew();
+        this.pourInCup();
+        if (this.customerWantsCondiments()) {
+          this.addCondiments();
+        }
+      }
+
+      // 공통 구현: 물을 끓인다
+      boilWater() {
+        this.log('물을 끓입니다');
+      }
+
+      // 추상 메서드: 하위 클래스에서 구현
+      brew() {
+        throw new Error('brew() must be implemented');
+      }
+
+      // 공통 구현: 컵에 따른다
+      pourInCup() {
+        this.log('컵에 따릅니다');
+      }
+
+      // 추상 메서드: 하위 클래스에서 구현
+      addCondiments() {
+        throw new Error('addCondiments() must be implemented');
+      }
+
+      // Hook 메서드: 기본 구현을 제공하며 하위 클래스에서 오버라이드 가능
+      customerWantsCondiments() {
+        return true;
+      }
+
+      // 로깅 보조 메서드
+      log(message) {
+        if (this.onLog) {
+          this.onLog(message);
+        }
+      }
+    }
+
+    // ===== Coffee 구체적 클래스 =====
+    class Coffee extends CaffeineBeverage {
+      brew() {
+        this.log('커피 필터를 사용해 우립니다');
+      }
+
+      addCondiments() {
+        this.log('설탕과 우유를 추가합니다');
+      }
+    }
+
+    // ===== Tea 구체적 클래스 =====
+    class Tea extends CaffeineBeverage {
+      brew() {
+        this.log('차 잎을 우립니다');
+      }
+
+      addCondiments() {
+        this.log('레몬을 추가합니다');
+      }
+    }
+
+    // ===== Espresso 구체적 클래스 =====
+    class Espresso extends CaffeineBeverage {
+      brew() {
+        this.log('에스프레소를 추출합니다');
+      }
+
+      // Hook 메서드 오버라이드: Espresso는 첨가물을 원하지 않음
+      customerWantsCondiments() {
+        return false;
+      }
+    }
+
+    // ===== Alpine.js 상태 관리 함수 =====
+    function patternDemo() {
+      return {
+        // 상태 속성
+        selectedBeverage: 'coffee',
+        logs: [],
+        darkMode: false,
+
+        // 초기화 메서드
+        init() {
+          // localStorage에서 다크 모드 설정 복원
+          const savedDarkMode = localStorage.getItem('darkMode');
+          this.darkMode = savedDarkMode === 'true';
+          if (this.darkMode) {
+            document.documentElement.classList.add('dark');
+          }
+        },
+
+        // 음료 선택 메서드
+        selectBeverage(type) {
+          this.selectedBeverage = type;
+          this.addLog(`${this.getBeverageDisplayName(type)} 선택되었습니다.`, 'info');
+          this.updateSequenceDiagram();
+        },
+
+        // 음료 인스턴스 생성 메서드
+        createBeverage() {
+          switch(this.selectedBeverage) {
+            case 'coffee': return new Coffee();
+            case 'tea': return new Tea();
+            case 'espresso': return new Espresso();
+            default: return new Coffee();
+          }
+        },
+
+        // 실행 메서드: 선택된 음료의 prepareRecipe() 실행
+        run() {
+          this.logs = [];
+          const beverageName = this.getBeverageDisplayName(this.selectedBeverage);
+          this.addLog(`=== ${beverageName} 제조 시작 ===`, 'info');
+
+          const beverage = this.createBeverage();
+          let delay = 300;
+
+          // 콜백 설정: 각 로그 메시지가 나올 때마다 호출
+          beverage.onLog = (message) => {
+            setTimeout(() => {
+              this.addLog(`  • ${message}`, 'success');
+            }, delay);
+            delay += 300;
+          };
+
+          // 템플릿 메서드 실행
+          beverage.prepareRecipe();
+
+          // 완료 메시지
+          setTimeout(() => {
+            this.addLog(`=== ${beverageName} 제조 완료! ===`, 'success');
+          }, delay);
+
+          // 시퀀스 다이어그램 업데이트
+          this.updateSequenceDiagram();
+        },
+
+        // 로그 추가
+        addLog(message, type = 'info') {
+          this.logs.push({
+            message: message,
+            type: type,
+            timestamp: new Date().toLocaleTimeString('ko-KR')
+          });
+
+          // 자동 스크롤
+          this.$nextTick(() => {
+            const logElement = document.getElementById('execution-log');
+            if (logElement) {
+              logElement.scrollTop = logElement.scrollHeight;
+            }
+          });
+        },
+
+        // 로그 초기화 메서드
+        reset() {
+          this.logs = [];
+          this.addLog('모든 상태가 초기화되었습니다.', 'info');
+        },
+
+        // 다크 모드 전환 메서드
+        toggleDarkMode() {
+          this.darkMode = !this.darkMode;
+          document.documentElement.classList.toggle('dark');
+          localStorage.setItem('darkMode', this.darkMode.toString());
+        },
+
+        // 음료 표시 이름
+        getBeverageDisplayName(type) {
+          const names = {
+            'coffee': 'Coffee',
+            'tea': 'Tea',
+            'espresso': 'Espresso'
+          };
+          return names[type] || type;
+        },
+
+        // 시퀀스 다이어그램 업데이트
+        updateSequenceDiagram() {
+          const diagram = this.generateSequenceDiagram();
+          const container = document.getElementById('sequence-diagram');
+          if (container) {
+            container.innerHTML = '<div class="mermaid">' + diagram + '</div>';
+
+            // Mermaid 다이어그램 재렌더링
+            if (window.mermaid) {
+              mermaid.contentLoaded();
+            }
+          }
+        },
+
+        // 시퀀스 다이어그램 생성
+        generateSequenceDiagram() {
+          const beverageType = this.selectedBeverage.charAt(0).toUpperCase() +
+                              this.selectedBeverage.slice(1);
+
+          let diagram = 'sequenceDiagram\n';
+          diagram += '    participant Client\n';
+          diagram += '    participant ' + beverageType + '\n';
+          diagram += '    participant CaffeineBeverage\n\n';
+          diagram += '    Client->>+' + beverageType + ': prepareRecipe()\n';
+          diagram += '    ' + beverageType + '->>CaffeineBeverage: boilWater()\n';
+          diagram += '    CaffeineBeverage-->>-' + beverageType + ': \n';
+          diagram += '    ' + beverageType + '->>+' + beverageType + ': brew()\n';
+          diagram += '    Note right of ' + beverageType + ': ' + this.getBrewMessage() + '\n';
+          diagram += '    ' + beverageType + '-->>-' + beverageType + ': \n';
+          diagram += '    ' + beverageType + '->>CaffeineBeverage: pourInCup()\n';
+          diagram += '    CaffeineBeverage-->>-' + beverageType + ': \n';
+
+          // Espresso는 addCondiments() 호출 안 함
+          if (this.selectedBeverage !== 'espresso') {
+            diagram += '    ' + beverageType + '->>+' + beverageType + ': addCondiments()\n';
+            diagram += '    Note right of ' + beverageType + ': ' + this.getCondimentsMessage() + '\n';
+            diagram += '    ' + beverageType + '-->>-' + beverageType + ': \n';
+          }
+
+          diagram += '    ' + beverageType + '-->>Client: 완료';
+          return diagram;
+        },
+
+        // 음료별 brew 메시지
+        getBrewMessage() {
+          switch(this.selectedBeverage) {
+            case 'coffee': return '커피 필터를 사용해 우립니다';
+            case 'tea': return '차 잎을 우립니다';
+            case 'espresso': return '에스프레소를 추출합니다';
+            default: return '우립니다';
+          }
+        },
+
+        // 음료별 condiments 메시지
+        getCondimentsMessage() {
+          switch(this.selectedBeverage) {
+            case 'coffee': return '설탕과 우유를 추가합니다';
+            case 'tea': return '레몬을 추가합니다';
+            default: return '첨가물을 추가합니다';
+          }
+        }
+      }
+    }
+  </script>
+
+</body>
+</html>
